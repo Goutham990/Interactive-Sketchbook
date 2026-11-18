@@ -1,0 +1,2413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Wanderlust Field Notes — Interactive Acrylic Travel Sketchbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600&family=Patrick+Hand&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --desk-bg: #ebe4d8;
+      --desk-dot: rgba(120, 105, 88, 0.12);
+      --cover-bg: #3b463d;
+      --cover-border: #2a332b;
+      --paper-cream: #fbf7ee;
+      --paper-warm: #f4ecdc;
+      --paper-edge: #dfd4be;
+      --ink-dark: #2a2421;
+      --ink-muted: #6c6158;
+      --accent-coral: #e26d5a;
+      --accent-ochre: #e0a443;
+      --accent-teal: #3d8b85;
+      --accent-pink: #ec4899;
+      --ui-surface: rgba(255, 252, 246, 0.9);
+      --ui-border: rgba(42, 36, 33, 0.1);
+      --shadow-ambient: 0 28px 60px -15px rgba(42, 32, 22, 0.28), 0 10px 24px -8px rgba(42, 32, 22, 0.16);
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-hand: 'Caveat', cursive;
+      --font-note: 'Patrick Hand', cursive;
+      --flip-duration: 680ms;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font-ui);
+      color: var(--ink-dark);
+      background-color: var(--desk-bg);
+      background-image:
+        radial-gradient(circle at 20% 15%, rgba(255, 250, 240, 0.7) 0%, transparent 55%),
+        radial-gradient(circle at 85% 85%, rgba(212, 198, 178, 0.5) 0%, transparent 50%),
+        radial-gradient(var(--desk-dot) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 24px 24px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 100%;
+      padding: 14px 18px 12px;
+      position: relative;
+    }
+
+    /* Floating Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      background: var(--ui-surface);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--ui-border);
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(42, 32, 22, 0.08);
+      z-index: 40;
+      max-width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .brand-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      padding-right: 10px;
+      border-right: 1px solid var(--ui-border);
+      color: var(--ink-dark);
+    }
+
+    .brand-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-coral), var(--accent-ochre));
+      box-shadow: 0 0 0 2px rgba(226, 109, 90, 0.2);
+    }
+
+    .spread-indicator {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      min-width: 78px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chapter-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+    }
+
+    .chapter-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(42, 36, 33, 0.18);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      padding: 0;
+    }
+
+    .chapter-dot:hover {
+      background: rgba(42, 36, 33, 0.45);
+      transform: scale(1.2);
+    }
+
+    .chapter-dot.active {
+      width: 22px;
+      background: var(--accent-coral);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--ui-border);
+    }
+
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink-dark);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tool-btn:hover:not(:disabled) {
+      background: rgba(42, 36, 33, 0.06);
+    }
+
+    .tool-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .tool-btn.active {
+      background: var(--ink-dark);
+      color: var(--paper-cream);
+    }
+
+    .tool-btn.duo-btn.active {
+      background: var(--accent-pink);
+      color: #fff;
+      box-shadow: 0 3px 12px rgba(236, 72, 153, 0.35);
+    }
+
+    .tool-btn.bend-btn.active {
+      background: #141414;
+      color: #fff;
+    }
+
+    .tool-btn.hidden {
+      display: none;
+    }
+
+    .tool-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Stage */
+    .stage {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 0;
+      padding: 10px 0;
+      perspective: 2000px;
+    }
+
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--ui-border);
+      background: var(--ui-surface);
+      backdrop-filter: blur(10px);
+      color: var(--ink-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(42, 32, 22, 0.12);
+      transition: all 0.2s ease;
+      z-index: 30;
+    }
+
+    .nav-arrow:hover:not(:disabled) {
+      transform: translateY(-50%) scale(1.08);
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(42, 32, 22, 0.18);
+    }
+
+    .nav-arrow:disabled {
+      opacity: 0.32;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .nav-arrow.prev { left: max(8px, 2vw); }
+    .nav-arrow.next { right: max(8px, 2vw); }
+
+    /* Device Frame & Foldable iPhone Duo */
+    .device-frame {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      width: min(980px, 88vw);
+      height: min(620px, 73vh);
+      transform-style: preserve-3d;
+    }
+
+    .device-frame.dual-screen {
+      padding: 16px 18px 22px;
+      background: linear-gradient(145deg, #242629, #131416);
+      border-radius: 34px;
+      box-shadow:
+        0 35px 80px -15px rgba(20, 18, 16, 0.55),
+        inset 0 1px 1px rgba(255, 255, 255, 0.18),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.65);
+      border: 2px solid #35383d;
+    }
+
+    /* Hardware side buttons in iPhone Duo mode */
+    .hw-btn {
+      display: none;
+      position: absolute;
+      background: #2f3237;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .device-frame.dual-screen .hw-btn {
+      display: block;
+    }
+
+    .hw-btn.top-right {
+      top: -5px;
+      right: 64px;
+      width: 44px;
+      height: 4px;
+    }
+
+    .hw-btn.side-vol1 {
+      right: -5px;
+      top: 90px;
+      width: 4px;
+      height: 42px;
+    }
+
+    .hw-btn.side-vol2 {
+      right: -5px;
+      top: 144px;
+      width: 4px;
+      height: 42px;
+    }
+
+    .device-frame.dual-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 14px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, #101113, #3f4348 45%, #222427 55%, #101113);
+      z-index: 2;
+      border-radius: 4px;
+      transition: opacity 0.4s ease;
+    }
+
+    .duo-home-bar {
+      display: none;
+      position: absolute;
+      bottom: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.42);
+      z-index: 35;
+      pointer-events: none;
+    }
+
+    .device-frame.dual-screen .duo-home-bar {
+      display: block;
+    }
+
+    /* Bend Effect in iPhone Duo Mode */
+    .device-frame.dual-screen.bent .book-cover {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    .device-frame.dual-screen.bent .page-left {
+      transform-origin: right center;
+      transform: perspective(1400px) rotateY(22deg) translateZ(16px);
+      box-shadow: -14px 18px 36px rgba(0, 0, 0, 0.38);
+      z-index: 12;
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.55s ease;
+    }
+
+    .device-frame.dual-screen.bent .page-right {
+      transform-origin: left center;
+      transform: perspective(1400px) rotateY(-18deg) translateZ(-14px);
+      filter: blur(0.65px) brightness(0.93);
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.55s ease;
+    }
+
+    /* Closed Foldable iPhone Duo Outer Cover Screen */
+    .device-frame.dual-screen.duo-closed {
+      width: min(470px, 84vw);
+      padding: 16px 16px 22px;
+      border-radius: 38px;
+    }
+
+    .device-frame.dual-screen.duo-closed::before {
+      left: 6px;
+      transform: none;
+      width: 10px;
+      border-radius: 38px 0 0 38px;
+    }
+
+    .duo-outer-cover {
+      display: none;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--cover-bg);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    .device-frame.dual-screen.duo-closed .duo-outer-cover {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .device-frame.dual-screen.duo-closed .book-cover {
+      display: none;
+    }
+
+    .duo-camera-hole {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #0d0e10;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12), inset 0 1px 2px rgba(80, 120, 200, 0.4);
+      z-index: 10;
+    }
+
+    /* Desk Closed Sketchbook Cover (Initial State before opening) */
+    .closed-book-view {
+      position: relative;
+      width: min(480px, 86vw);
+      height: min(610px, 73vh);
+      background: var(--cover-bg);
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 2px, transparent 2px, transparent 5px),
+        repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.035) 0px, rgba(0, 0, 0, 0.035) 2px, transparent 2px, transparent 5px);
+      border-radius: 8px 18px 18px 8px;
+      border: 1px solid var(--cover-border);
+      box-shadow:
+        -6px 0 0 #263028,
+        -10px 4px 12px rgba(0, 0, 0, 0.25),
+        8px 18px 48px rgba(32, 24, 18, 0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 36px 32px;
+      cursor: pointer;
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
+      transform-origin: left center;
+      z-index: 15;
+    }
+
+    .closed-book-view:hover {
+      transform: translateY(-4px) rotateY(-4deg);
+    }
+
+    .closed-book-view.opening {
+      transform: rotateY(-120deg) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .closed-book-view::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      bottom: 12px;
+      left: 16px;
+      right: 14px;
+      border: 1.5px dashed rgba(224, 164, 67, 0.45);
+      border-radius: 4px 12px 12px 4px;
+      pointer-events: none;
+    }
+
+    .closed-cover-badge {
+      width: min(230px, 52vw);
+      height: min(230px, 52vw);
+      border-radius: 50%;
+      background: var(--paper-cream);
+      border: 3px solid var(--ink-dark);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .closed-cover-inscription {
+      font-family: var(--font-hand);
+      font-size: clamp(22px, 2.5vw, 28px);
+      color: #f4ebd9;
+      text-align: center;
+      line-height: 1.25;
+      max-width: 320px;
+    }
+
+    .closed-cover-hint {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(244, 235, 217, 0.72);
+      padding: 6px 14px;
+      border: 1px solid rgba(244, 235, 217, 0.25);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.16);
+    }
+
+    .book-cover {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--cover-bg);
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.018) 0px, rgba(255, 255, 255, 0.018) 2px, transparent 2px, transparent 5px),
+        repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 0px, rgba(0, 0, 0, 0.03) 2px, transparent 2px, transparent 5px);
+      border-radius: 14px;
+      padding: 13px 16px;
+      box-shadow: var(--shadow-ambient);
+      border: 1px solid var(--cover-border);
+      transition: transform 0.35s ease, border-radius 0.35s ease;
+    }
+
+    .device-frame.dual-screen .book-cover {
+      border-radius: 20px;
+      padding: 8px 10px;
+      box-shadow: none;
+    }
+
+    .elastic-band {
+      position: absolute;
+      top: -2px;
+      bottom: -2px;
+      right: 26px;
+      width: 13px;
+      background: linear-gradient(90deg, #b84a39, #d45d4b 45%, #9f3c2d);
+      box-shadow: 1px 0 4px rgba(0, 0, 0, 0.3);
+      z-index: 1;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .device-frame.dual-screen .elastic-band,
+    .device-frame.dual-screen .ribbon-bookmark {
+      display: none;
+    }
+
+    .ribbon-bookmark {
+      position: absolute;
+      bottom: -18px;
+      left: 48%;
+      width: 16px;
+      height: 36px;
+      background: linear-gradient(180deg, #c95543, #df6b58);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+      z-index: 2;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+      transform: rotate(-3deg);
+    }
+
+    .book-spread {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      perspective: 2200px;
+      transform-style: preserve-3d;
+      z-index: 5;
+      border-radius: 6px;
+      box-shadow:
+        -4px 0 0 var(--paper-edge),
+        -7px 1px 0 #cfc2aa,
+        4px 0 0 var(--paper-edge),
+        7px 1px 0 #cfc2aa,
+        0 4px 0 #d8ccb4,
+        0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .spine-crease {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 34px;
+      transform: translateX(-50%);
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(42, 32, 22, 0.06) 28%,
+        rgba(42, 32, 22, 0.22) 48%,
+        rgba(20, 15, 10, 0.32) 50%,
+        rgba(42, 32, 22, 0.18) 52%,
+        rgba(42, 32, 22, 0.05) 72%,
+        transparent 100%
+      );
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .page {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: var(--paper-cream);
+      background-image:
+        radial-gradient(ellipse at 50% 50%, transparent 65%, rgba(215, 200, 175, 0.22) 100%),
+        repeating-linear-gradient(0deg, rgba(160, 145, 120, 0.025) 0px, rgba(160, 145, 120, 0.025) 1px, transparent 1px, transparent 28px);
+      overflow: hidden;
+      cursor: grab;
+      transition: transform 0.35s ease, filter 0.35s ease;
+    }
+
+    .page:active {
+      cursor: grabbing;
+    }
+
+    .page-left {
+      border-radius: 6px 2px 2px 6px;
+      border-right: 1px solid rgba(42, 36, 33, 0.08);
+    }
+
+    .page-right {
+      border-radius: 2px 6px 6px 2px;
+      border-left: 1px solid rgba(42, 36, 33, 0.06);
+    }
+
+    /* Corner Curl Affordance (Top-Right & Top-Left like nz-sketchbook + Bottom corners) */
+    .corner-curl-top {
+      position: absolute;
+      top: 0;
+      width: 0;
+      height: 0;
+      transition: all 0.25s ease;
+      pointer-events: none;
+      z-index: 24;
+    }
+
+    .page-right:hover .corner-curl-top {
+      border-width: 0 34px 34px 0;
+    }
+
+    .corner-curl-top.right {
+      right: 0;
+      border-style: solid;
+      border-width: 0 18px 18px 0;
+      border-color: transparent rgba(210, 198, 178, 0.78) #fffaf0 transparent;
+      box-shadow: -2px 2px 6px rgba(0, 0, 0, 0.09);
+      border-bottom-left-radius: 4px;
+    }
+
+    .corner-curl-top.left {
+      left: 0;
+      border-style: solid;
+      border-width: 18px 0 0 18px;
+      border-color: rgba(210, 198, 178, 0.78) transparent transparent #fffaf0;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.09);
+      border-bottom-right-radius: 4px;
+    }
+
+    .page-left:hover .corner-curl-top.left {
+      border-width: 34px 0 0 34px;
+    }
+
+    /* 3D Flipping Leaf (supports real-time drag AND animated flip) */
+    .flip-leaf {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 50%;
+      height: 100%;
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      z-index: 25;
+      pointer-events: none;
+      display: none;
+      will-change: transform;
+    }
+
+    .flip-leaf.active {
+      display: block;
+    }
+
+    .flip-leaf.animating {
+      transition: transform var(--flip-duration) cubic-bezier(0.32, 0.08, 0.22, 1);
+    }
+
+    .flip-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      background-color: var(--paper-cream);
+    }
+
+    .flip-face.front {
+      border-radius: 2px 6px 6px 2px;
+      box-shadow: inset 8px 0 22px rgba(0, 0, 0, 0.06);
+    }
+
+    .flip-face.back {
+      transform: rotateY(180deg);
+      border-radius: 6px 2px 2px 6px;
+      box-shadow: inset -8px 0 22px rgba(0, 0, 0, 0.06);
+    }
+
+    .flip-shade {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0%, transparent 35%, rgba(255, 255, 255, 0.22) 65%, rgba(0, 0, 0, 0.1) 100%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    /* Left Page Content */
+    .left-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: clamp(20px, 3.6vw, 42px) clamp(22px, 3.8vw, 44px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .washi-tape {
+      position: absolute;
+      top: 14px;
+      left: 26px;
+      width: 88px;
+      height: 22px;
+      transform: rotate(-4deg);
+      opacity: 0.85;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      clip-path: polygon(2% 0%, 98% 2%, 100% 96%, 96% 100%, 3% 98%, 0% 88%);
+      pointer-events: none;
+    }
+
+    .stamp-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .date-stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1.5px dashed rgba(212, 85, 67, 0.7);
+      border-radius: 5px;
+      color: #c24b3a;
+      font-family: var(--font-ui);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transform: rotate(-1.5deg);
+    }
+
+    .location-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-note);
+      font-size: 15px;
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .story-block {
+      margin: auto 0;
+      padding: 12px 0;
+    }
+
+    .spread-title {
+      font-family: var(--font-hand);
+      font-size: clamp(28px, 3.2vw, 40px);
+      font-weight: 700;
+      line-height: 1.08;
+      color: var(--ink-dark);
+      margin-bottom: 12px;
+    }
+
+    .story-text {
+      font-family: var(--font-note);
+      font-size: clamp(16px, 1.55vw, 19.5px);
+      line-height: 1.52;
+      color: #3d3530;
+      margin-bottom: 16px;
+    }
+
+    .sketch-meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .meta-sticker {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: var(--paper-warm);
+      border: 1px solid rgba(42, 36, 33, 0.12);
+      border-radius: 999px;
+      font-family: var(--font-note);
+      font-size: 13.5px;
+      color: var(--ink-muted);
+    }
+
+    .toc-list {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .toc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 11px;
+      border-radius: 8px;
+      background: rgba(244, 236, 220, 0.65);
+      border: 1px solid rgba(42, 36, 33, 0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-note);
+      font-size: 16px;
+      color: var(--ink-dark);
+    }
+
+    .toc-item:hover {
+      background: #fff;
+      transform: translateX(4px);
+      border-color: var(--accent-coral);
+    }
+
+    .toc-item span.toc-date {
+      font-family: var(--font-ui);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      letter-spacing: 0.06em;
+    }
+
+    .left-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(42, 36, 33, 0.14);
+    }
+
+    .replay-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      border: 1.5px solid var(--ink-dark);
+      background: var(--paper-cream);
+      color: var(--ink-dark);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 2px 2px 0 var(--ink-dark);
+    }
+
+    .replay-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--accent-coral);
+      border-color: var(--accent-coral);
+    }
+
+    .replay-btn.replaying {
+      background: var(--accent-coral);
+      color: #fff;
+      border-color: var(--accent-coral);
+      box-shadow: none;
+    }
+
+    .page-num {
+      font-family: var(--font-hand);
+      font-size: 17px;
+      color: var(--ink-muted);
+    }
+
+    /* Right Page Illustration */
+    .right-art-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .art-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform;
+    }
+
+    .hotspot-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 12;
+    }
+
+    .hotspot-pin {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      margin: -13px 0 0 -13px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      background: rgba(226, 109, 90, 0.9);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .hotspot-pin::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.7);
+      animation: pulse-ring 2.4s infinite ease-out;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      100% { transform: scale(1.45); opacity: 0; }
+    }
+
+    .hotspot-pin:hover,
+    .hotspot-pin.open {
+      transform: scale(1.18);
+      background: var(--ink-dark);
+    }
+
+    .hotspot-card {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      right: 18px;
+      background: rgba(251, 247, 238, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid var(--ink-dark);
+      border-radius: 10px;
+      padding: 10px 14px;
+      box-shadow: 4px 4px 0 rgba(42, 36, 33, 0.85);
+      z-index: 16;
+      pointer-events: auto;
+      display: none;
+      animation: card-pop 0.22s ease;
+    }
+
+    .hotspot-card.visible {
+      display: block;
+    }
+
+    @keyframes card-pop {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hotspot-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .hotspot-card-title {
+      font-family: var(--font-hand);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink-dark);
+    }
+
+    .hotspot-close {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      color: var(--ink-muted);
+      line-height: 1;
+      padding: 2px 4px;
+    }
+
+    .hotspot-card-desc {
+      font-family: var(--font-note);
+      font-size: 15px;
+      color: #463d37;
+      line-height: 1.35;
+    }
+
+    .footer-credit {
+      font-size: 12px;
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .footer-credit span.heart {
+      color: var(--accent-coral);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 768px) {
+      .app-shell { padding: 10px 10px 8px; }
+      .brand-pill { display: none; }
+      .device-frame { width: 94vw; height: 70vh; }
+      .book-cover { padding: 9px 10px; }
+      .book-spread { grid-template-columns: 1fr; }
+      .spine-crease { display: none; }
+      .page-left, .page-right { border-radius: 6px; border: none; }
+      .book-spread.mobile-show-left .page-right { display: none; }
+      .book-spread.mobile-show-right .page-left { display: none; }
+      .flip-leaf { left: 0; width: 100%; }
+      .nav-arrow { width: 36px; height: 36px; }
+      .nav-arrow.prev { left: 4px; }
+      .nav-arrow.next { right: 4px; }
+      .tool-btn span.btn-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="toolbar" aria-label="Sketchbook Controls">
+      <div class="brand-pill">
+        <span class="brand-dot"></span>
+        <span>Field Notes</span>
+      </div>
+
+      <span class="spread-indicator" id="spreadIndicator">Cover</span>
+
+      <div class="chapter-dots" id="chapterDots" role="tablist" aria-label="Jump to spread"></div>
+
+      <div class="toolbar-divider"></div>
+
+      <button class="tool-btn active" id="soundToggle" type="button" title="Toggle paper-rustle sound">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <span class="btn-label">Sound On</span>
+      </button>
+
+      <button class="tool-btn bend-btn hidden" id="bendToggle" type="button" title="Bend foldable screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6l9 3 9-3v12l-9 3-9-3z"></path>
+          <line x1="12" y1="9" x2="12" y2="21"></line>
+        </svg>
+        <span class="btn-label">Bend</span>
+      </button>
+
+      <button class="tool-btn close-btn hidden" id="closeDuoToggle" type="button" title="Close or Open foldable device">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+        <span class="btn-label" id="closeDuoLabel">Close</span>
+      </button>
+
+      <button class="tool-btn duo-btn" id="viewToggle" type="button" title="Toggle iPhone Duo foldable preview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="9" height="16" rx="2"></rect>
+          <rect x="13" y="4" width="9" height="16" rx="2"></rect>
+        </svg>
+        <span class="btn-label">iPhone Duo</span>
+      </button>
+    </header>
+
+    <main class="stage" id="stage">
+      <button class="nav-arrow prev" id="prevBtn" type="button" aria-label="Previous spread">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <!-- Closed Cover View (initial desk state) -->
+      <div class="closed-book-view" id="closedBookView" role="button" tabindex="0" aria-label="Open sketchbook">
+        <div class="elastic-band"></div>
+        <span class="closed-cover-hint">Vol. IV • Acrylic &amp; Ink</span>
+        <div class="closed-cover-badge">
+          <canvas id="coverBadgeCanvas" width="320" height="320" style="width:100%;height:100%;display:block;"></canvas>
+        </div>
+        <p class="closed-cover-inscription">“i drew the places that stayed with me, so they never fade.”<br/>— wanderlust field notes</p>
+        <span class="closed-cover-hint">Click cover to open →</span>
+      </div>
+
+      <!-- Open Sketchbook / iPhone Duo Frame -->
+      <div class="device-frame hidden" id="deviceFrame">
+        <div class="hw-btn top-right"></div>
+        <div class="hw-btn side-vol1"></div>
+        <div class="hw-btn side-vol2"></div>
+        <div class="duo-home-bar"></div>
+
+        <!-- Outer Cover Screen shown when iPhone Duo is Closed -->
+        <div class="duo-outer-cover" id="duoOuterCover" title="Click to open">
+          <div class="duo-camera-hole"></div>
+          <div class="closed-cover-badge" style="margin-bottom: 18px;">
+            <canvas id="duoCoverCanvas" width="320" height="320" style="width:100%;height:100%;display:block;"></canvas>
+          </div>
+          <p class="closed-cover-inscription" style="font-size: 20px;">“i drew the places that stayed with me…”</p>
+          <span class="closed-cover-hint" style="margin-top: 14px;">Tap to unfold</span>
+        </div>
+
+        <div class="book-cover">
+          <div class="elastic-band"></div>
+          <div class="ribbon-bookmark"></div>
+
+          <div class="book-spread mobile-show-left" id="bookSpread">
+            <div class="spine-crease"></div>
+
+            <section class="page page-left" id="leftPage">
+              <div class="corner-curl-top left" id="cornerLeft"></div>
+              <div class="left-content" id="leftContent"></div>
+            </section>
+
+            <section class="page page-right" id="rightPage">
+              <div class="corner-curl-top right" id="cornerRight"></div>
+              <div class="right-art-wrap" id="rightArtWrap">
+                <canvas class="art-canvas" id="baseCanvas"></canvas>
+                <canvas class="art-canvas" id="ambientCanvas"></canvas>
+                <div class="hotspot-layer" id="hotspotLayer"></div>
+                <div class="hotspot-card" id="hotspotCard">
+                  <div class="hotspot-card-head">
+                    <span class="hotspot-card-title" id="hotspotTitle"></span>
+                    <button class="hotspot-close" id="hotspotClose" type="button" aria-label="Close note">&times;</button>
+                  </div>
+                  <p class="hotspot-card-desc" id="hotspotDesc"></p>
+                </div>
+              </div>
+            </section>
+
+            <div class="flip-leaf" id="flipLeaf">
+              <div class="flip-face front" id="flipFront"></div>
+              <div class="flip-face back" id="flipBack"></div>
+              <div class="flip-shade" id="flipShade"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="nav-arrow next" id="nextBtn" type="button" aria-label="Next spread">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </main>
+
+    <footer class="footer-credit">
+      <span class="heart">♡</span>
+      <span>created by Goutham • click or drag pages to flip</span>
+    </footer>
+  </div>
+
+  <script>
+    /**
+     * 1. MODULAR ACRYLIC-MARKER PROCEDURAL ENGINE
+     */
+    class AcrylicRecorder {
+      constructor(seed = 1337) {
+        this.commands = [];
+        this.seed = seed;
+      }
+
+      rand() {
+        this.seed = (this.seed * 1664525 + 1013904223) % 4294967296;
+        return this.seed / 4294967296;
+      }
+
+      jitter(val, amount) {
+        return val + (this.rand() - 0.5) * amount * 2;
+      }
+
+      addWash(color, x, y, w, h, angle = 0) {
+        this.commands.push({ type: 'wash', color, x, y, w, h, angle, seed: Math.floor(this.rand() * 9999) });
+      }
+
+      addPoly(points, fill, stroke = null, strokeWidth = 2.5, hatchColor = null) {
+        const jPoints = points.map(([px, py]) => [this.jitter(px, 0.004), this.jitter(py, 0.004)]);
+        this.commands.push({ type: 'poly', points: jPoints, fill, stroke, strokeWidth, hatchColor, seed: Math.floor(this.rand() * 9999) });
+      }
+
+      addRect(x, y, w, h, fill, stroke = null, strokeWidth = 2.5, hatchColor = null) {
+        this.addPoly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], fill, stroke, strokeWidth, hatchColor);
+      }
+
+      addCircle(cx, cy, r, fill, stroke = null, strokeWidth = 2.4) {
+        this.commands.push({ type: 'circle', cx, cy, r, fill, stroke, strokeWidth, seed: Math.floor(this.rand() * 9999) });
+      }
+
+      addStroke(points, color, width = 6, alpha = 0.95) {
+        const jPoints = points.map(([px, py]) => [this.jitter(px, 0.003), this.jitter(py, 0.003)]);
+        this.commands.push({ type: 'stroke', points: jPoints, color, width, alpha, seed: Math.floor(this.rand() * 9999) });
+      }
+
+      addDots(cx, cy, radius, count, colors, dotSize = 3.5) {
+        const dots = [];
+        for (let i = 0; i < count; i++) {
+          const a = this.rand() * Math.PI * 2;
+          const d = Math.sqrt(this.rand()) * radius;
+          dots.push({
+            x: cx + Math.cos(a) * d,
+            y: cy + Math.sin(a) * d * 0.72,
+            r: dotSize * (0.65 + this.rand() * 0.75),
+            color: colors[Math.floor(this.rand() * colors.length)]
+          });
+        }
+        this.commands.push({ type: 'dots', dots });
+      }
+
+      addText(text, x, y, color, font, align = 'center', rotate = 0) {
+        this.commands.push({ type: 'text', text, x, y, color, font, align, rotate });
+      }
+    }
+
+    function seededNoise(seed) {
+      let s = seed || 1;
+      return () => {
+        s = (s * 1664525 + 1013904223) % 4294967296;
+        return s / 4294967296;
+      };
+    }
+
+    function executeAcrylicCommand(ctx, cmd, W, H) {
+      const rnd = seededNoise(cmd.seed || 42);
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (cmd.type === 'wash') {
+        ctx.translate(cmd.x * W, cmd.y * H);
+        ctx.rotate(cmd.angle);
+        ctx.fillStyle = cmd.color;
+        ctx.globalAlpha = 0.92;
+        ctx.fillRect(0, 0, cmd.w * W, cmd.h * H);
+        ctx.globalAlpha = 0.14;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = Math.max(4, H * 0.015);
+        for (let i = 0; i < 6; i++) {
+          const yy = (i / 6) * cmd.h * H + rnd() * 14;
+          ctx.beginPath();
+          ctx.moveTo(0, yy);
+          ctx.lineTo(cmd.w * W, yy + (rnd() - 0.5) * 12);
+          ctx.stroke();
+        }
+      } else if (cmd.type === 'poly') {
+        const pts = cmd.points.map(([px, py]) => [px * W, py * H]);
+        ctx.beginPath();
+        pts.forEach(([x, y], idx) => (idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+        ctx.closePath();
+        if (cmd.fill) {
+          ctx.fillStyle = cmd.fill;
+          ctx.globalAlpha = 0.96;
+          ctx.fill();
+        }
+        if (cmd.hatchColor) {
+          ctx.save();
+          ctx.clip();
+          ctx.strokeStyle = cmd.hatchColor;
+          ctx.lineWidth = Math.max(3, W * 0.009);
+          ctx.globalAlpha = 0.25;
+          const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+          const minX = Math.min(...xs), maxX = Math.max(...xs);
+          const minY = Math.min(...ys), maxY = Math.max(...ys);
+          for (let y = minY; y <= maxY; y += Math.max(8, H * 0.022)) {
+            ctx.beginPath();
+            ctx.moveTo(minX - 6, y + (rnd() - 0.5) * 6);
+            ctx.lineTo(maxX + 6, y + (rnd() - 0.5) * 6);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        if (cmd.stroke) {
+          ctx.strokeStyle = cmd.stroke;
+          ctx.lineWidth = cmd.strokeWidth;
+          ctx.globalAlpha = 0.9;
+          ctx.stroke();
+        }
+      } else if (cmd.type === 'circle') {
+        const cx = cmd.cx * W, cy = cmd.cy * H, r = cmd.r * Math.min(W, H);
+        ctx.beginPath();
+        const segs = 22;
+        for (let i = 0; i <= segs; i++) {
+          const a = (i / segs) * Math.PI * 2;
+          const rr = r * (0.96 + rnd() * 0.08);
+          const px = cx + Math.cos(a) * rr;
+          const py = cy + Math.sin(a) * rr;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        if (cmd.fill) {
+          ctx.fillStyle = cmd.fill;
+          ctx.globalAlpha = 0.95;
+          ctx.fill();
+        }
+        if (cmd.stroke) {
+          ctx.strokeStyle = cmd.stroke;
+          ctx.lineWidth = cmd.strokeWidth;
+          ctx.globalAlpha = 0.92;
+          ctx.stroke();
+        }
+      } else if (cmd.type === 'stroke') {
+        const pts = cmd.points.map(([px, py]) => [px * W, py * H]);
+        if (pts.length >= 2) {
+          ctx.strokeStyle = cmd.color;
+          ctx.lineWidth = cmd.width * (W / 460);
+          ctx.globalAlpha = cmd.alpha;
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(pts[i][0], pts[i][1]);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = cmd.alpha * 0.22;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = Math.max(1, (cmd.width * (W / 460)) * 0.28);
+          ctx.stroke();
+        }
+      } else if (cmd.type === 'dots') {
+        cmd.dots.forEach(d => {
+          ctx.fillStyle = d.color;
+          ctx.globalAlpha = 0.92;
+          ctx.beginPath();
+          ctx.arc(d.x * W, d.y * H, d.r * (W / 460), 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else if (cmd.type === 'text') {
+        ctx.translate(cmd.x * W, cmd.y * H);
+        ctx.rotate(cmd.rotate);
+        ctx.fillStyle = cmd.color;
+        ctx.font = cmd.font.replace('{SIZE}', Math.round(W * 0.085) + 'px');
+        ctx.textAlign = cmd.align;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(cmd.text, 0, 0);
+      }
+
+      ctx.restore();
+    }
+
+    function drawPaperGrainOverlay(ctx, W, H) {
+      ctx.save();
+      ctx.globalAlpha = 0.045;
+      ctx.fillStyle = '#5c4b37';
+      const rnd = seededNoise(909);
+      for (let i = 0; i < 480; i++) {
+        ctx.fillRect(rnd() * W, rnd() * H, 1.5, 1.5);
+      }
+      ctx.restore();
+    }
+
+    /**
+     * 2. TRAVEL SKETCHBOOK DATA & SCENE DEFINITIONS
+     */
+    const SKETCHBOOK_SPREADS = [
+      {
+        id: 'cover',
+        isCover: true,
+        date: 'VOL. IV • 2026',
+        location: 'FIELD ARCHIVE',
+        title: 'Wanderlust Field Notes',
+        story: 'A pocket-sized acrylic & ink travelogue capturing quiet mornings, rattling trams, coastal lemon groves, and northern skies. Pick a chapter below or drag any page to turn.',
+        tags: ['🎨 Acrylic Markers', '📓 4 Destinations', '✨ Interactive'],
+        tapeColor: 'rgba(224, 164, 67, 0.55)',
+        hotspots: [
+          { x: 50, y: 48, title: 'Acrylic Emblem', desc: 'Hand-layered Posca-style strokes with organic ink outlines and warm paper tooth.' },
+          { x: 50, y: 76, title: 'Field Compass', desc: 'Click or drag any page to peel and flip through the spreads.' }
+        ],
+        buildScene() {
+          const rec = new AcrylicRecorder(101);
+          rec.addWash('#f4ebd9', 0, 0, 1, 1);
+          rec.addRect(0.07, 0.06, 0.86, 0.88, '#3b4b41', '#26312a', 3, '#4c5f53');
+          rec.addRect(0.11, 0.10, 0.78, 0.80, null, '#e0a443', 2);
+          rec.addCircle(0.5, 0.48, 0.22, '#e26d5a', '#2a2421', 3);
+          rec.addCircle(0.5, 0.48, 0.16, '#f4b956', '#2a2421', 2);
+          rec.addPoly([[0.34, 0.53], [0.45, 0.38], [0.54, 0.50], [0.60, 0.42], [0.66, 0.53]], '#2d6a65', '#2a2421', 2.4, '#3d8b85');
+          rec.addStroke([[0.33, 0.56], [0.43, 0.54], [0.52, 0.57], [0.62, 0.54], [0.67, 0.56]], '#fbf7ee', 4.5);
+          rec.addStroke([[0.22, 0.72], [0.28, 0.62], [0.33, 0.56]], '#88b382', 4);
+          rec.addStroke([[0.78, 0.72], [0.72, 0.62], [0.67, 0.56]], '#88b382', 4);
+          rec.addDots(0.24, 0.64, 0.06, 8, ['#a9cfa2', '#e0a443'], 4);
+          rec.addDots(0.76, 0.64, 0.06, 8, ['#a9cfa2', '#e26d5a'], 4);
+          rec.addText('SKETCHBOOK', 0.5, 0.21, '#fbf7ee', '700 {SIZE} Caveat, cursive');
+          rec.addText('2026 • TRAVELS', 0.5, 0.80, '#f4b956', '700 {SIZE} Caveat, cursive');
+          return rec.commands;
+        },
+        animate(ctx, W, H, t) {
+          ctx.save();
+          for (let i = 0; i < 14; i++) {
+            const x = ((Math.sin(t * 0.4 + i * 1.9) * 0.35 + 0.5) * W);
+            const y = ((Math.cos(t * 0.3 + i * 2.3) * 0.35 + 0.5) * H);
+            const alpha = 0.25 + 0.35 * Math.sin(t * 2 + i);
+            ctx.fillStyle = `rgba(244, 185, 86, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      },
+      {
+        id: 'kyoto',
+        date: 'OCT 14, 2026',
+        location: 'KYOTO, JAPAN',
+        title: 'Arashiyama & Dawn Torii',
+        story: 'Woke before sunrise to cycle past the quiet bamboo grove. Mist clung to the cedar hills while a single vermilion torii glowed against the cool morning sky. Warm roasted matcha at the corner tea stand.',
+        tags: ['🍵 Matcha 420¥', '🚲 6:30 AM Ride', '🎋 Bamboo Mist'],
+        tapeColor: 'rgba(226, 109, 90, 0.55)',
+        hotspots: [
+          { x: 52, y: 54, title: 'Vermilion Torii Gate', desc: 'Painted in two thick coats of coral-red acrylic marker with charcoal edge lines.' },
+          { x: 20, y: 66, title: 'Stone Lantern (Tōrō)', desc: 'Moss-dappled granite lantern glowing softly beside the gravel path.' },
+          { x: 80, y: 38, title: 'Bamboo & Sakura', desc: 'Layered emerald stalks with drifting autumn-cherry blossoms.' }
+        ],
+        buildScene() {
+          const rec = new AcrylicRecorder(202);
+          rec.addWash('#f7dec9', 0, 0, 1, 0.55);
+          rec.addWash('#f3c4a8', 0, 0.25, 1, 0.28);
+          rec.addCircle(0.72, 0.24, 0.11, '#fbe7b2', '#e26d5a', 2);
+          rec.addPoly([[0, 0.55], [0.22, 0.36], [0.48, 0.48], [0.76, 0.33], [1, 0.49], [1, 0.65], [0, 0.65]], '#8b7e96', '#2a2421', 2, '#a396ad');
+          rec.addPoly([[0, 0.62], [0.3, 0.47], [0.62, 0.56], [1, 0.45], [1, 0.68], [0, 0.68]], '#5e7366', '#2a2421', 2, '#758f7f');
+          rec.addWash('#6ba3a8', 0, 0.64, 1, 0.36);
+          rec.addPoly([[0, 0.72], [0.42, 0.68], [0.68, 0.75], [1, 0.71], [1, 1], [0, 1]], '#d8c9b0', '#2a2421', 2, '#cbb89a');
+          [[0.82, 10], [0.89, 8], [0.94, 7]].forEach(([bx, w]) => {
+            rec.addStroke([[bx, 0.76], [bx - 0.02, 0.4], [bx + 0.01, 0.04]], '#4d7c53', w);
+            rec.addStroke([[bx - 0.01, 0.32], [bx - 0.10, 0.24]], '#6a9e6f', 3.5);
+            rec.addStroke([[bx, 0.48], [bx - 0.09, 0.42]], '#6a9e6f', 3.5);
+          });
+          rec.addRect(0.36, 0.35, 0.045, 0.38, '#d94f3d', '#2a2421', 2.6, '#eb6b59');
+          rec.addRect(0.60, 0.35, 0.045, 0.38, '#d94f3d', '#2a2421', 2.6, '#eb6b59');
+          rec.addPoly([[0.27, 0.32], [0.73, 0.32], [0.70, 0.37], [0.30, 0.37]], '#d94f3d', '#2a2421', 2.8);
+          rec.addPoly([[0.25, 0.29], [0.75, 0.29], [0.72, 0.33], [0.28, 0.33]], '#2a2421', '#2a2421', 2);
+          rec.addRect(0.32, 0.42, 0.36, 0.032, '#d94f3d', '#2a2421', 2.4);
+          rec.addRect(0.16, 0.62, 0.08, 0.14, '#9e978e', '#2a2421', 2.2);
+          rec.addRect(0.15, 0.54, 0.10, 0.08, '#f4b956', '#2a2421', 2.2);
+          rec.addPoly([[0.12, 0.54], [0.20, 0.47], [0.28, 0.54]], '#7c766f', '#2a2421', 2.2);
+          rec.addStroke([[0.0, 0.30], [0.16, 0.22], [0.28, 0.15]], '#4a3a31', 7);
+          rec.addDots(0.18, 0.18, 0.16, 48, ['#f6b3c0', '#f9d5dc', '#e88296'], 5.5);
+          return rec.commands;
+        },
+        animate(ctx, W, H, t) {
+          ctx.save();
+          for (let i = 0; i < 12; i++) {
+            const px = ((i * 0.09 + t * 0.035 + Math.sin(t + i) * 0.02) % 1) * W;
+            const py = ((i * 0.13 + t * 0.05) % 0.85) * H;
+            ctx.translate(px, py);
+            ctx.rotate(t * 1.4 + i);
+            ctx.fillStyle = i % 2 === 0 ? '#f6b3c0' : '#f9d5dc';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 4.5, 2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+          }
+          const glow = 0.25 + 0.12 * Math.sin(t * 3.2);
+          ctx.fillStyle = `rgba(244, 185, 86, ${glow})`;
+          ctx.beginPath();
+          ctx.arc(0.20 * W, 0.58 * H, 0.07 * W, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      },
+      {
+        id: 'positano',
+        date: 'JUL 03, 2026',
+        location: 'POSITANO, ITALY',
+        title: 'Lemon Groves & Tyrrhenian Blue',
+        story: 'Four hundred sun-warmed stone steps down to Spiaggia Grande. The air smelled of sea salt and crushed Amalfi lemons. Below, colorful pastel houses tumbled down the cliffside into shimmering cobalt water.',
+        tags: ['🍋 Lemon Granita', '⛵ Gozzo Boat', '☀️ 31°C'],
+        tapeColor: 'rgba(61, 139, 133, 0.5)',
+        hotspots: [
+          { x: 34, y: 40, title: 'Cliffside Houses', desc: 'Stacked terracotta, ochre, and coral-pink facades painted with bold chisel strokes.' },
+          { x: 76, y: 78, title: 'Wooden Gozzo Boat', desc: 'Bobbing gently in the turquoise cove after an afternoon swim.' },
+          { x: 82, y: 24, title: 'Amalfi Lemon Branch', desc: 'Bright cadmium-yellow lemons framing the upper-right pergola.' }
+        ],
+        buildScene() {
+          const rec = new AcrylicRecorder(303);
+          rec.addWash('#a6d8e8', 0, 0, 1, 0.5);
+          rec.addCircle(0.18, 0.16, 0.09, '#fde073', '#e0a443', 2);
+          rec.addPoly([[0, 0.18], [0.58, 0.36], [0.78, 0.62], [0, 0.68]], '#c89b6e', '#2a2421', 2.4, '#d9b188');
+          const houses = [
+            [0.08, 0.24, 0.14, 0.13, '#f29f8d'],
+            [0.24, 0.28, 0.13, 0.14, '#f6d687'],
+            [0.14, 0.38, 0.16, 0.14, '#fbf5e6'],
+            [0.32, 0.40, 0.15, 0.13, '#e87d67'],
+            [0.48, 0.45, 0.14, 0.13, '#f3c169'],
+            [0.06, 0.50, 0.18, 0.14, '#f4b393'],
+            [0.26, 0.52, 0.17, 0.13, '#fbf5e6']
+          ];
+          houses.forEach(([x, y, w, h, c]) => {
+            rec.addRect(x, y, w, h, c, '#2a2421', 2.2);
+            rec.addPoly([[x - 0.01, y], [x + w / 2, y - 0.04], [x + w + 0.01, y]], '#c95543', '#2a2421', 2);
+            rec.addRect(x + w * 0.35, y + h * 0.3, w * 0.28, h * 0.38, '#2d4a5e', '#2a2421', 1.5);
+          });
+          rec.addWash('#267696', 0, 0.63, 1, 0.37);
+          rec.addWash('#3ca0b5', 0, 0.63, 1, 0.12);
+          rec.addStroke([[1.0, 0.12], [0.85, 0.19], [0.74, 0.23]], '#4b3b2e', 5.5);
+          rec.addDots(0.84, 0.18, 0.11, 18, ['#4e8f53', '#6db36c'], 7);
+          [[0.79, 0.22], [0.88, 0.26], [0.92, 0.16]].forEach(([lx, ly]) => {
+            rec.addCircle(lx, ly, 0.036, '#f9d448', '#2a2421', 2.2);
+          });
+          return rec.commands;
+        },
+        animate(ctx, W, H, t) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 2.5;
+          for (let i = 0; i < 9; i++) {
+            const rx = (0.12 + (i * 0.095) + Math.sin(t + i) * 0.015) * W;
+            const ry = (0.68 + (i % 3) * 0.08) * H;
+            ctx.beginPath();
+            ctx.moveTo(rx, ry);
+            ctx.lineTo(rx + 18 + Math.sin(t * 2 + i) * 6, ry);
+            ctx.stroke();
+          }
+          const bx = 0.74 * W + Math.sin(t * 1.1) * 4;
+          const by = 0.79 * H + Math.cos(t * 1.8) * 3;
+          ctx.translate(bx, by);
+          ctx.rotate(Math.sin(t * 1.5) * 0.05);
+          ctx.fillStyle = '#fbf7ee';
+          ctx.strokeStyle = '#2a2421';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(-28, -4);
+          ctx.lineTo(28, -4);
+          ctx.lineTo(20, 12);
+          ctx.lineTo(-20, 12);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#e26d5a';
+          ctx.fillRect(-22, -4, 44, 5);
+          ctx.restore();
+        }
+      },
+      {
+        id: 'lisbon',
+        date: 'MAY 19, 2026',
+        location: 'LISBOA, PORTUGAL',
+        title: 'Tram 28 & Jacaranda Bloom',
+        story: 'Clinging to the brass handrail as the yellow tram rattled up Alfama’s cobblestones. Purple jacaranda petals dusted the sidewalks, and a ginger cat watched the sunset from a terracotta roof.',
+        tags: ['🚋 Tram No. 28', '🥐 Pastéis de Nata', '🐈 Alfama Roofs'],
+        tapeColor: 'rgba(138, 114, 190, 0.45)',
+        hotspots: [
+          { x: 52, y: 64, title: 'Yellow Tram 28', desc: 'Mustard-ochre acrylic body with crisp white roof and overhead cable lines.' },
+          { x: 22, y: 28, title: 'Blooming Jacaranda', desc: 'Violet-lavender marker dabs drifting over the whitewashed walls.' },
+          { x: 80, y: 42, title: 'Curious Rooftop Cat', desc: 'Keep an eye on the ginger cat blinking from the tiled ledge.' }
+        ],
+        buildScene() {
+          const rec = new AcrylicRecorder(404);
+          rec.addWash('#f8d9b8', 0, 0, 1, 0.48);
+          rec.addWash('#e8b7d4', 0, 0, 1, 0.22);
+          rec.addWash('#5f8fa8', 0, 0.44, 1, 0.14);
+          rec.addRect(0.02, 0.22, 0.30, 0.48, '#fbf4e4', '#2a2421', 2.4);
+          rec.addPoly([[0.0, 0.22], [0.17, 0.14], [0.34, 0.22]], '#cf5f4a', '#2a2421', 2.2);
+          rec.addRect(0.68, 0.26, 0.30, 0.46, '#f4d6a8', '#2a2421', 2.4);
+          rec.addPoly([[0.66, 0.26], [0.83, 0.18], [1.0, 0.26]], '#cf5f4a', '#2a2421', 2.2);
+          rec.addRect(0.04, 0.46, 0.26, 0.08, '#4a7eb3', '#2a2421', 1.8);
+          rec.addPoly([[0, 0.65], [1, 0.60], [1, 1], [0, 1]], '#8c837a', '#2a2421', 2.4, '#a69d94');
+          rec.addStroke([[0.34, 1.0], [0.46, 0.64]], '#3d3734', 3);
+          rec.addStroke([[0.68, 1.0], [0.58, 0.64]], '#3d3734', 3);
+          rec.addRect(0.35, 0.48, 0.32, 0.29, '#f2b830', '#2a2421', 2.8, '#f8cc5c');
+          rec.addRect(0.37, 0.43, 0.28, 0.06, '#fbf7ee', '#2a2421', 2.4);
+          rec.addRect(0.38, 0.51, 0.11, 0.11, '#3b5c73', '#2a2421', 2);
+          rec.addRect(0.53, 0.51, 0.11, 0.11, '#3b5c73', '#2a2421', 2);
+          rec.addCircle(0.51, 0.70, 0.025, '#fff5cc', '#2a2421', 2);
+          rec.addStroke([[0, 0.34], [1, 0.31]], '#2a2421', 1.8);
+          rec.addStroke([[0.12, 0.66], [0.18, 0.40], [0.24, 0.25]], '#4a3d36', 6);
+          rec.addDots(0.22, 0.24, 0.16, 46, ['#9c7bd1', '#b79ae6', '#7b5ab5'], 6);
+          return rec.commands;
+        },
+        animate(ctx, W, H, t) {
+          ctx.save();
+          const cx = 0.80 * W, cy = 0.42 * H;
+          ctx.fillStyle = '#e07c48';
+          ctx.strokeStyle = '#2a2421';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + 8, 11, 13, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(cx, cy - 6, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          const blink = (t % 3.5) > 3.35;
+          ctx.fillStyle = '#2a2421';
+          if (blink) {
+            ctx.fillRect(cx - 4, cy - 7, 3, 1.2);
+            ctx.fillRect(cx + 1, cy - 7, 3, 1.2);
+          } else {
+            ctx.fillRect(cx - 4, cy - 8, 2.2, 2.8);
+            ctx.fillRect(cx + 1.5, cy - 8, 2.2, 2.8);
+          }
+          for (let i = 0; i < 8; i++) {
+            const px = ((0.1 + i * 0.06 + t * 0.025) % 0.8) * W;
+            const py = ((0.2 + i * 0.11 + t * 0.04) % 0.9) * H;
+            ctx.fillStyle = 'rgba(156, 123, 209, 0.75)';
+            ctx.beginPath();
+            ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      },
+      {
+        id: 'reykjavik',
+        date: 'NOV 08, 2026',
+        location: 'REYKJAVÍK, ICELAND',
+        title: 'Harbor Lights & Aurora',
+        story: 'Sub-zero wind off Faxaflói Bay, warm cardamom buns in paper bags, and then the sky cracked open into emerald ribbons. The corrugated harbor houses glowed like little painted lanterns.',
+        tags: ['🌌 Aurora Kp 5', '⛪ Hallgrímskirkja', '❄️ -3°C'],
+        tapeColor: 'rgba(65, 195, 145, 0.45)',
+        hotspots: [
+          { x: 50, y: 24, title: 'Aurora Borealis', desc: 'Translucent lime-green and violet acrylic sweeps undulating across the night sky.' },
+          { x: 50, y: 48, title: 'Hallgrímskirkja', desc: 'Basalt-inspired stepped concrete spire watching over the snowy ridge.' },
+          { x: 26, y: 66, title: 'Old Harbor Houses', desc: 'Red, mustard, and teal corrugated-iron cottages reflecting in the bay.' }
+        ],
+        buildScene() {
+          const rec = new AcrylicRecorder(505);
+          rec.addWash('#1b243b', 0, 0, 1, 0.68);
+          rec.addDots(0.5, 0.25, 0.45, 36, ['#ffffff', '#fdf0b5'], 1.8);
+          rec.addPoly([[0, 0.58], [0.22, 0.42], [0.46, 0.54], [0.74, 0.39], [1, 0.55], [1, 0.66], [0, 0.66]], '#334263', '#121829', 2, '#475980');
+          rec.addRect(0.46, 0.36, 0.08, 0.24, '#cbd4e1', '#1b243b', 2);
+          rec.addRect(0.42, 0.44, 0.16, 0.16, '#b0bccf', '#1b243b', 2);
+          rec.addPoly([[0.48, 0.28], [0.50, 0.21], [0.52, 0.28]], '#e2e8f0', '#1b243b', 2);
+          rec.addWash('#162136', 0, 0.64, 1, 0.36);
+          rec.addRect(0, 0.62, 1, 0.06, '#e8eef5', '#1b243b', 2);
+          const cottages = [
+            [0.10, 0.53, 0.12, 0.11, '#d9534f'],
+            [0.24, 0.55, 0.11, 0.09, '#f0ad4e'],
+            [0.64, 0.54, 0.12, 0.10, '#3d8b85'],
+            [0.78, 0.53, 0.13, 0.11, '#e26d5a']
+          ];
+          cottages.forEach(([x, y, w, h, c]) => {
+            rec.addRect(x, y, w, h, c, '#1b243b', 2.2);
+            rec.addPoly([[x - 0.01, y], [x + w / 2, y - 0.04], [x + w + 0.01, y]], '#2b3448', '#1b243b', 2);
+            rec.addRect(x + w * 0.38, y + h * 0.35, w * 0.24, h * 0.3, '#fde073', '#1b243b', 1.4);
+          });
+          return rec.commands;
+        },
+        animate(ctx, W, H, t) {
+          ctx.save();
+          const grad = ctx.createLinearGradient(0, 0.08 * H, W, 0.34 * H);
+          grad.addColorStop(0, 'rgba(65, 224, 155, 0.0)');
+          grad.addColorStop(0.3, 'rgba(65, 224, 155, 0.38)');
+          grad.addColorStop(0.65, 'rgba(130, 110, 235, 0.32)');
+          grad.addColorStop(1, 'rgba(65, 224, 155, 0.0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.moveTo(0, 0.26 * H);
+          for (let x = 0; x <= W; x += 20) {
+            const nx = x / W;
+            const y = (0.20 + Math.sin(nx * 5 + t * 0.9) * 0.045 + Math.cos(nx * 3 - t * 0.6) * 0.03) * H;
+            ctx.lineTo(x, y);
+          }
+          ctx.lineTo(W, 0.04 * H);
+          ctx.lineTo(0, 0.04 * H);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.globalAlpha = 0.35 + 0.15 * Math.sin(t * 2.5);
+          [0.16, 0.29, 0.70, 0.84].forEach((rx, idx) => {
+            ctx.fillStyle = '#fde073';
+            ctx.fillRect(rx * W - 4, 0.70 * H + idx * 4, 8 + Math.sin(t * 3 + idx) * 3, 22);
+          });
+          ctx.restore();
+        }
+      }
+    ];
+
+    /**
+     * 3. WEB AUDIO API PAPER-RUSTLE SYNTHESIZER
+     */
+    class PaperAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      ensureContext() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+
+      playFlip() {
+        if (!this.enabled) return;
+        this.ensureContext();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const duration = 0.28;
+        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1400, now);
+        filter.frequency.exponentialRampToValueAtTime(420, now + duration);
+        filter.Q.value = 1.4;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.16, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+    }
+
+    /**
+     * 4. SKETCHBOOK CONTROLLER (with Closed Cover, Real-Time Drag Peel, and iPhone Duo Bend/Close)
+     */
+    class SketchbookApp {
+      constructor() {
+        this.isCoverClosed = true;
+        this.currentSpread = 0;
+        this.mobileSide = 'left';
+        this.isFlipping = false;
+        this.isReplaying = false;
+        this.replayRaf = null;
+        this.ambientRaf = null;
+        this.audio = new PaperAudio();
+
+        // iPhone Duo states
+        this.isDuoMode = false;
+        this.isDuoBent = false;
+        this.isDuoClosed = false;
+
+        // DOM Elements
+        this.closedBookView = document.getElementById('closedBookView');
+        this.coverBadgeCanvas = document.getElementById('coverBadgeCanvas');
+        this.duoCoverCanvas = document.getElementById('duoCoverCanvas');
+        this.duoOuterCover = document.getElementById('duoOuterCover');
+        this.deviceFrame = document.getElementById('deviceFrame');
+        this.spreadEl = document.getElementById('bookSpread');
+        this.leftPage = document.getElementById('leftPage');
+        this.rightPage = document.getElementById('rightPage');
+        this.leftContent = document.getElementById('leftContent');
+        this.rightArtWrap = document.getElementById('rightArtWrap');
+        this.baseCanvas = document.getElementById('baseCanvas');
+        this.ambientCanvas = document.getElementById('ambientCanvas');
+        this.hotspotLayer = document.getElementById('hotspotLayer');
+        this.hotspotCard = document.getElementById('hotspotCard');
+        this.hotspotTitle = document.getElementById('hotspotTitle');
+        this.hotspotDesc = document.getElementById('hotspotDesc');
+        this.hotspotClose = document.getElementById('hotspotClose');
+        this.flipLeaf = document.getElementById('flipLeaf');
+        this.flipFront = document.getElementById('flipFront');
+        this.flipBack = document.getElementById('flipBack');
+        this.flipShade = document.getElementById('flipShade');
+
+        this.indicator = document.getElementById('spreadIndicator');
+        this.chapterDots = document.getElementById('chapterDots');
+        this.prevBtn = document.getElementById('prevBtn');
+        this.nextBtn = document.getElementById('nextBtn');
+        this.soundToggle = document.getElementById('soundToggle');
+        this.viewToggle = document.getElementById('viewToggle');
+        this.bendToggle = document.getElementById('bendToggle');
+        this.closeDuoToggle = document.getElementById('closeDuoToggle');
+        this.closeDuoLabel = document.getElementById('closeDuoLabel');
+
+        this.drawCoverEmblems();
+        this.initDots();
+        this.bindEvents();
+        this.updateUIState();
+        this.startAmbientLoop();
+      }
+
+      isMobile() {
+        return window.innerWidth <= 768;
+      }
+
+      drawCoverEmblems() {
+        const cmds = SKETCHBOOK_SPREADS[0].buildScene();
+        [this.coverBadgeCanvas, this.duoCoverCanvas].forEach(canvas => {
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          cmds.forEach(c => executeAcrylicCommand(ctx, c, canvas.width, canvas.height));
+          drawPaperGrainOverlay(ctx, canvas.width, canvas.height);
+        });
+      }
+
+      initDots() {
+        this.chapterDots.innerHTML = '';
+        SKETCHBOOK_SPREADS.forEach((sp, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'chapter-dot';
+          btn.title = sp.title;
+          btn.setAttribute('aria-label', `Go to ${sp.title}`);
+          btn.addEventListener('click', () => {
+            if (this.isCoverClosed) {
+              this.openBook(idx);
+            } else {
+              this.goToSpread(idx);
+            }
+          });
+          this.chapterDots.appendChild(btn);
+        });
+      }
+
+      openBook(targetIdx = 0) {
+        if (!this.isCoverClosed) return;
+        this.audio.playFlip();
+        this.closedBookView.classList.add('opening');
+        setTimeout(() => {
+          this.isCoverClosed = false;
+          this.closedBookView.classList.add('hidden');
+          this.closedBookView.classList.remove('opening');
+          this.deviceFrame.classList.remove('hidden');
+          this.currentSpread = targetIdx;
+          this.renderSpread(targetIdx);
+          this.updateUIState();
+        }, 320);
+      }
+
+      closeBookToCover() {
+        if (this.isCoverClosed || this.isDuoMode) return;
+        this.audio.playFlip();
+        this.isCoverClosed = true;
+        this.deviceFrame.classList.add('hidden');
+        this.closedBookView.classList.remove('hidden');
+        this.updateUIState();
+      }
+
+      bindEvents() {
+        // Closed cover click / keyboard
+        this.closedBookView.addEventListener('click', () => this.openBook(0));
+        this.closedBookView.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.openBook(0);
+          }
+        });
+
+        this.prevBtn.addEventListener('click', () => this.step(-1));
+        this.nextBtn.addEventListener('click', () => {
+          if (this.isCoverClosed) this.openBook(0);
+          else this.step(1);
+        });
+
+        this.hotspotClose.addEventListener('click', () => this.closeHotspot());
+
+        // Sound Toggle
+        this.soundToggle.addEventListener('click', () => {
+          this.audio.enabled = !this.audio.enabled;
+          this.soundToggle.classList.toggle('active', this.audio.enabled);
+          this.soundToggle.querySelector('.btn-label').textContent = this.audio.enabled ? 'Sound On' : 'Muted';
+          if (this.audio.enabled) this.audio.playFlip();
+        });
+
+        // iPhone Duo Toggle
+        this.viewToggle.addEventListener('click', () => {
+          if (this.isCoverClosed) {
+            this.openBook(0);
+          }
+          this.isDuoMode = !this.isDuoMode;
+          if (!this.isDuoMode) {
+            this.isDuoBent = false;
+            this.isDuoClosed = false;
+          }
+          this.updateUIState();
+          setTimeout(() => this.resizeAndDraw(), 420);
+        });
+
+        // Bend Toggle (visible in iPhone Duo)
+        this.bendToggle.addEventListener('click', () => {
+          if (!this.isDuoMode || this.isDuoClosed) return;
+          this.isDuoBent = !this.isDuoBent;
+          this.updateUIState();
+        });
+
+        // Close/Open Toggle (visible in iPhone Duo)
+        this.closeDuoToggle.addEventListener('click', () => {
+          if (!this.isDuoMode) return;
+          this.isDuoClosed = !this.isDuoClosed;
+          if (this.isDuoClosed) this.isDuoBent = false;
+          this.audio.playFlip();
+          this.updateUIState();
+          if (!this.isDuoClosed) setTimeout(() => this.resizeAndDraw(), 420);
+        });
+
+        this.duoOuterCover.addEventListener('click', () => {
+          if (this.isDuoMode && this.isDuoClosed) {
+            this.isDuoClosed = false;
+            this.audio.playFlip();
+            this.updateUIState();
+            setTimeout(() => this.resizeAndDraw(), 420);
+          }
+        });
+
+        // Keyboard Navigation
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') {
+            if (this.isCoverClosed) this.openBook(0);
+            else this.step(1);
+          } else if (e.key === 'ArrowLeft') {
+            this.step(-1);
+          } else if (e.key === 'Escape') {
+            this.closeHotspot();
+          }
+        });
+
+        // Subtle hover parallax on right illustration
+        this.rightArtWrap.addEventListener('mousemove', (e) => {
+          const rect = this.rightArtWrap.getBoundingClientRect();
+          const dx = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+          const dy = ((e.clientY - rect.top) / rect.height - 0.5) * 8;
+          this.baseCanvas.style.transform = `scale(1.02) translate(${-dx}px, ${-dy}px)`;
+          this.ambientCanvas.style.transform = `scale(1.03) translate(${-dx * 1.4}px, ${-dy * 1.4}px)`;
+        });
+
+        this.rightArtWrap.addEventListener('mouseleave', () => {
+          this.baseCanvas.style.transform = 'scale(1) translate(0, 0)';
+          this.ambientCanvas.style.transform = 'scale(1) translate(0, 0)';
+        });
+
+        // Real-Time Interactive Drag-to-Peel & Click-to-Flip
+        this.bindInteractiveDragAndClick();
+
+        window.addEventListener('resize', () => {
+          this.updateMobileClasses();
+          this.resizeAndDraw();
+        });
+      }
+
+      bindInteractiveDragAndClick() {
+        let dragState = null;
+
+        const onPointerDown = (e) => {
+          if (this.isFlipping || this.isCoverClosed || this.isDuoClosed) return;
+          if (e.target.closest('button') || e.target.closest('.hotspot-pin') || e.target.closest('.toc-item') || e.target.closest('.hotspot-card')) return;
+
+          const rect = this.spreadEl.getBoundingClientRect();
+          const isRightSide = this.isMobile() ? (e.clientX - rect.left > rect.width * 0.45) : (e.clientX - rect.left >= rect.width / 2);
+          const dir = isRightSide ? 1 : -1;
+
+          // Check if we can move in that direction
+          if (!this.isMobile()) {
+            if (dir === 1 && this.currentSpread >= SKETCHBOOK_SPREADS.length - 1) return;
+            if (dir === -1 && this.currentSpread === 0) {
+              // Allow clicking left page on Spread 1 to close cover (if not in Duo mode)
+              if (!this.isDuoMode) {
+                dragState = { startX: e.clientX, dir: -1, closeToCover: true, dragging: false };
+              }
+              return;
+            }
+          }
+
+          dragState = {
+            startX: e.clientX,
+            dir,
+            rectWidth: rect.width,
+            dragging: false,
+            progress: 0,
+            staged: false,
+            targetIdx: this.currentSpread + dir
+          };
+        };
+
+        const onPointerMove = (e) => {
+          if (!dragState || dragState.closeToCover) return;
+          const dx = e.clientX - dragState.startX;
+
+          if (!dragState.dragging && Math.abs(dx) > 8) {
+            // Only engage real-time 3D drag on desktop 2-page spread
+            if (!this.isMobile()) {
+              dragState.dragging = true;
+              this.stageInteractiveLeaf(dragState.dir, dragState.targetIdx);
+            }
+          }
+
+          if (dragState.dragging) {
+            const halfW = dragState.rectWidth * 0.48;
+            let p = 0;
+            if (dragState.dir === 1) {
+              p = Math.max(0, Math.min(1, -dx / halfW));
+              this.flipLeaf.style.transform = `rotateY(${-p * 180}deg)`;
+            } else {
+              p = Math.max(0, Math.min(1, dx / halfW));
+              this.flipLeaf.style.transform = `rotateY(${-180 + p * 180}deg)`;
+            }
+            dragState.progress = p;
+            this.flipShade.style.opacity = Math.sin(p * Math.PI) * 0.9;
+          }
+        };
+
+        const onPointerUp = (e) => {
+          if (!dragState) return;
+          const state = dragState;
+          dragState = null;
+
+          if (state.closeToCover) {
+            if (Math.abs(e.clientX - state.startX) < 10) {
+              this.closeBookToCover();
+            }
+            return;
+          }
+
+          if (!state.dragging) {
+            // Clean click anywhere on left or right page turns the page!
+            this.step(state.dir);
+            return;
+          }
+
+          // Finish or spring back the dragged leaf
+          this.isFlipping = true;
+          this.flipLeaf.classList.add('animating');
+          const commit = state.progress > 0.25;
+
+          if (commit) {
+            this.audio.playFlip();
+            if (state.dir === 1) {
+              this.flipLeaf.style.transform = 'rotateY(-180deg)';
+            } else {
+              this.flipLeaf.style.transform = 'rotateY(0deg)';
+            }
+            this.flipShade.style.opacity = 0;
+            setTimeout(() => {
+              this.flipLeaf.classList.remove('active', 'animating');
+              this.isFlipping = false;
+              this.currentSpread = state.targetIdx;
+              this.renderSpread(state.targetIdx);
+              this.updateUIState();
+            }, 480);
+          } else {
+            // Spring back
+            if (state.dir === 1) {
+              this.flipLeaf.style.transform = 'rotateY(0deg)';
+            } else {
+              this.flipLeaf.style.transform = 'rotateY(-180deg)';
+            }
+            this.flipShade.style.opacity = 0;
+            setTimeout(() => {
+              this.flipLeaf.classList.remove('active', 'animating');
+              this.isFlipping = false;
+              this.renderSpread(this.currentSpread);
+            }, 420);
+          }
+        };
+
+        this.spreadEl.addEventListener('pointerdown', onPointerDown);
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+      }
+
+      stageInteractiveLeaf(dir, targetIdx) {
+        this.cancelReplay();
+        this.closeHotspot();
+        const newSpread = SKETCHBOOK_SPREADS[targetIdx];
+        const oldDataUrl = this.baseCanvas.toDataURL();
+        const oldLeftHtml = this.leftContent.innerHTML;
+
+        this.flipLeaf.classList.remove('animating');
+        this.flipLeaf.style.left = '50%';
+        this.flipLeaf.style.width = '50%';
+        this.flipLeaf.style.transformOrigin = 'left center';
+
+        if (dir === 1) {
+          this.flipFront.innerHTML = `<img src="${oldDataUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
+          this.flipBack.innerHTML = `<div class="left-content">${this.buildLeftHtml(newSpread, targetIdx)}</div>`;
+          this.flipLeaf.style.transform = 'rotateY(0deg)';
+          this.flipLeaf.classList.add('active');
+          this.drawStaticScene(newSpread);
+          this.renderHotspots(newSpread);
+        } else {
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = this.baseCanvas.width;
+          tempCanvas.height = this.baseCanvas.height;
+          const tctx = tempCanvas.getContext('2d');
+          newSpread.buildScene().forEach(c => executeAcrylicCommand(tctx, c, tempCanvas.width, tempCanvas.height));
+          drawPaperGrainOverlay(tctx, tempCanvas.width, tempCanvas.height);
+
+          this.flipFront.innerHTML = `<img src="${tempCanvas.toDataURL()}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
+          this.flipBack.innerHTML = `<div class="left-content">${oldLeftHtml}</div>`;
+          this.flipLeaf.style.transform = 'rotateY(-180deg)';
+          this.flipLeaf.classList.add('active');
+          this.leftContent.innerHTML = this.buildLeftHtml(newSpread, targetIdx);
+        }
+      }
+
+      updateUIState() {
+        this.deviceFrame.classList.toggle('dual-screen', this.isDuoMode);
+        this.deviceFrame.classList.toggle('bent', this.isDuoMode && this.isDuoBent && !this.isDuoClosed);
+        this.deviceFrame.classList.toggle('duo-closed', this.isDuoMode && this.isDuoClosed);
+
+        this.viewToggle.classList.toggle('active', this.isDuoMode);
+        this.bendToggle.classList.toggle('hidden', !this.isDuoMode);
+        this.closeDuoToggle.classList.toggle('hidden', !this.isDuoMode);
+
+        this.bendToggle.classList.toggle('active', this.isDuoBent);
+        this.bendToggle.disabled = this.isDuoClosed;
+        this.closeDuoLabel.textContent = this.isDuoClosed ? 'Open' : 'Close';
+
+        if (this.isCoverClosed) {
+          this.indicator.textContent = 'Cover';
+          this.prevBtn.disabled = true;
+          this.nextBtn.disabled = false;
+          this.chapterDots.querySelectorAll('.chapter-dot').forEach(d => d.classList.remove('active'));
+        } else {
+          this.indicator.textContent = `Spread ${this.currentSpread + 1} / ${SKETCHBOOK_SPREADS.length}`;
+          this.chapterDots.querySelectorAll('.chapter-dot').forEach((d, i) => {
+            d.classList.toggle('active', i === this.currentSpread);
+          });
+          const atStart = this.currentSpread === 0 && this.isDuoMode && (!this.isMobile() || this.mobileSide === 'left');
+          const atEnd = this.currentSpread === SKETCHBOOK_SPREADS.length - 1 && (!this.isMobile() || this.mobileSide === 'right');
+          this.prevBtn.disabled = atStart;
+          this.nextBtn.disabled = atEnd;
+        }
+      }
+
+      updateMobileClasses() {
+        this.spreadEl.classList.toggle('mobile-show-left', this.mobileSide === 'left');
+        this.spreadEl.classList.toggle('mobile-show-right', this.mobileSide === 'right');
+      }
+
+      step(dir) {
+        if (this.isFlipping || this.isCoverClosed || this.isDuoClosed) return;
+        if (this.isMobile()) {
+          if (dir > 0) {
+            if (this.mobileSide === 'left') {
+              this.flipMobile('right', this.currentSpread);
+            } else if (this.currentSpread < SKETCHBOOK_SPREADS.length - 1) {
+              this.flipMobile('left', this.currentSpread + 1);
+            }
+          } else {
+            if (this.mobileSide === 'right') {
+              this.flipMobile('left', this.currentSpread);
+            } else if (this.currentSpread > 0) {
+              this.flipMobile('right', this.currentSpread - 1);
+            } else if (!this.isDuoMode) {
+              this.closeBookToCover();
+            }
+          }
+        } else {
+          const target = this.currentSpread + dir;
+          if (target >= 0 && target < SKETCHBOOK_SPREADS.length) {
+            this.goToSpread(target);
+          } else if (target < 0 && !this.isDuoMode) {
+            this.closeBookToCover();
+          }
+        }
+      }
+
+      flipMobile(side, nextSpread) {
+        this.audio.playFlip();
+        this.mobileSide = side;
+        this.currentSpread = nextSpread;
+        this.updateMobileClasses();
+        this.renderSpread(nextSpread);
+        this.updateUIState();
+      }
+
+      goToSpread(targetIdx) {
+        if (this.isFlipping || targetIdx === this.currentSpread) return;
+        if (this.isMobile()) {
+          this.mobileSide = 'left';
+          this.currentSpread = targetIdx;
+          this.updateMobileClasses();
+          this.renderSpread(targetIdx);
+          this.updateUIState();
+          return;
+        }
+
+        const forward = targetIdx > this.currentSpread;
+        this.isFlipping = true;
+        this.stageInteractiveLeaf(forward ? 1 : -1, targetIdx);
+        this.audio.playFlip();
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            this.flipLeaf.classList.add('animating');
+            this.flipShade.style.opacity = '0.85';
+            this.flipLeaf.style.transform = forward ? 'rotateY(-180deg)' : 'rotateY(0deg)';
+          });
+        });
+
+        setTimeout(() => {
+          this.flipShade.style.opacity = '0';
+          this.flipLeaf.classList.remove('active', 'animating');
+          this.isFlipping = false;
+          this.currentSpread = targetIdx;
+          this.renderSpread(targetIdx);
+          this.updateUIState();
+        }, 700);
+      }
+
+      buildLeftHtml(spread, idx) {
+        const tocHtml = spread.isCover
+          ? `<ul class="toc-list">
+              ${SKETCHBOOK_SPREADS.slice(1).map((sp, i) => `
+                <li class="toc-item" data-jump="${i + 1}">
+                  <span>${i + 1}. ${sp.title}</span>
+                  <span class="toc-date">${sp.location}</span>
+                </li>
+              `).join('')}
+            </ul>`
+          : '';
+
+        return `
+          <div class="washi-tape" style="background: repeating-linear-gradient(-45deg, ${spread.tapeColor}, ${spread.tapeColor} 8px, rgba(255,255,255,0.45) 8px, rgba(255,255,255,0.45) 14px);"></div>
+          <div class="stamp-row">
+            <span class="date-stamp">${spread.date}</span>
+            <span class="location-pill">📍 ${spread.location}</span>
+          </div>
+          <div class="story-block">
+            <h1 class="spread-title">${spread.title}</h1>
+            <p class="story-text">${spread.story}</p>
+            <div class="sketch-meta-tags">
+              ${spread.tags.map(t => `<span class="meta-sticker">${t}</span>`).join('')}
+            </div>
+            ${tocHtml}
+          </div>
+          <div class="left-footer">
+            <button class="replay-btn" id="replayBtn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+              </svg>
+              <span>Replay drawing strokes</span>
+            </button>
+            <span class="page-num">p. ${idx * 2 + 1}</span>
+          </div>
+        `;
+      }
+
+      bindLeftControls() {
+        const replayBtn = this.leftContent.querySelector('#replayBtn');
+        if (replayBtn) {
+          replayBtn.addEventListener('click', () => this.replayStrokes());
+        }
+        this.leftContent.querySelectorAll('.toc-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const jumpIdx = Number(item.dataset.jump);
+            if (!Number.isNaN(jumpIdx)) this.goToSpread(jumpIdx);
+          });
+        });
+      }
+
+      renderSpread(idx) {
+        const spread = SKETCHBOOK_SPREADS[idx];
+        this.leftContent.innerHTML = this.buildLeftHtml(spread, idx);
+        this.bindLeftControls();
+        this.resizeAndDraw();
+        this.renderHotspots(spread);
+      }
+
+      resizeAndDraw() {
+        if (this.isCoverClosed || this.isDuoClosed) return;
+        const rect = this.rightArtWrap.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+
+        this.baseCanvas.width = w;
+        this.baseCanvas.height = h;
+        this.ambientCanvas.width = w;
+        this.ambientCanvas.height = h;
+
+        const spread = SKETCHBOOK_SPREADS[this.currentSpread];
+        this.drawStaticScene(spread);
+      }
+
+      drawStaticScene(spread) {
+        const ctx = this.baseCanvas.getContext('2d');
+        const W = this.baseCanvas.width;
+        const H = this.baseCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+        const cmds = spread.buildScene();
+        cmds.forEach(cmd => executeAcrylicCommand(ctx, cmd, W, H));
+        drawPaperGrainOverlay(ctx, W, H);
+      }
+
+      cancelReplay() {
+        if (this.replayRaf) {
+          cancelAnimationFrame(this.replayRaf);
+          this.replayRaf = null;
+        }
+        this.isReplaying = false;
+      }
+
+      replayStrokes() {
+        if (this.isMobile() && this.mobileSide === 'left') {
+          this.mobileSide = 'right';
+          this.updateMobileClasses();
+          this.resizeAndDraw();
+        }
+        this.cancelReplay();
+        const spread = SKETCHBOOK_SPREADS[this.currentSpread];
+        const cmds = spread.buildScene();
+        const ctx = this.baseCanvas.getContext('2d');
+        const W = this.baseCanvas.width;
+        const H = this.baseCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const btn = this.leftContent.querySelector('#replayBtn');
+        if (btn) btn.classList.add('replaying');
+
+        this.isReplaying = true;
+        let idx = 0;
+        let lastTime = performance.now();
+        const stepDelay = Math.max(45, Math.min(130, 2600 / Math.max(cmds.length, 1)));
+
+        const tick = (now) => {
+          if (!this.isReplaying) return;
+          if (now - lastTime >= stepDelay) {
+            lastTime = now;
+            if (idx < cmds.length) {
+              executeAcrylicCommand(ctx, cmds[idx], W, H);
+              idx++;
+            } else {
+              drawPaperGrainOverlay(ctx, W, H);
+              this.isReplaying = false;
+              if (btn) btn.classList.remove('replaying');
+              return;
+            }
+          }
+          this.replayRaf = requestAnimationFrame(tick);
+        };
+        this.replayRaf = requestAnimationFrame(tick);
+      }
+
+      renderHotspots(spread) {
+        this.hotspotLayer.innerHTML = '';
+        this.closeHotspot();
+        (spread.hotspots || []).forEach((hs, idx) => {
+          const pin = document.createElement('button');
+          pin.type = 'button';
+          pin.className = 'hotspot-pin';
+          pin.style.left = hs.x + '%';
+          pin.style.top = hs.y + '%';
+          pin.textContent = idx + 1;
+          pin.title = hs.title;
+          pin.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.hotspotTitle.textContent = hs.title;
+            this.hotspotDesc.textContent = hs.desc;
+            this.hotspotCard.classList.add('visible');
+            this.hotspotLayer.querySelectorAll('.hotspot-pin').forEach(p => p.classList.remove('open'));
+            pin.classList.add('open');
+          });
+          this.hotspotLayer.appendChild(pin);
+        });
+      }
+
+      closeHotspot() {
+        this.hotspotCard.classList.remove('visible');
+        this.hotspotLayer.querySelectorAll('.hotspot-pin').forEach(p => p.classList.remove('open'));
+      }
+
+      startAmbientLoop() {
+        const render = (now) => {
+          const t = now * 0.001;
+          if (!this.isCoverClosed && !this.isDuoClosed) {
+            const ctx = this.ambientCanvas.getContext('2d');
+            const W = this.ambientCanvas.width;
+            const H = this.ambientCanvas.height;
+            if (W && H) {
+              ctx.clearRect(0, 0, W, H);
+              const spread = SKETCHBOOK_SPREADS[this.currentSpread];
+              if (spread && typeof spread.animate === 'function') {
+                spread.animate(ctx, W, H, t);
+              }
+            }
+          }
+          this.ambientRaf = requestAnimationFrame(render);
+        };
+        this.ambientRaf = requestAnimationFrame(render);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      new SketchbookApp();
+    });
+  </script>
+</body>
+</html>
